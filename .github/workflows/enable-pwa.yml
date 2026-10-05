@@ -1,0 +1,58 @@
+name: Enable CRVT installation
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-pwa:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add PWA hooks
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+          changed = False
+          head = '''<link rel="manifest" href="./manifest.json">
+          <meta name="theme-color" content="#0b1726">
+          <meta name="mobile-web-app-capable" content="yes">
+          <meta name="apple-mobile-web-app-capable" content="yes">
+          <meta name="apple-mobile-web-app-title" content="CRVT">'''
+          if 'rel="manifest"' not in s:
+              marker = "</head>"
+              if marker not in s:
+                  raise SystemExit("No </head> found")
+              s = s.replace(marker, head + "\n" + marker, 1)
+              changed = True
+          sw = '''<script>
+          if ("serviceWorker" in navigator) {
+            window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {}));
+          }
+          </script>'''
+          if 'navigator.serviceWorker.register("./sw.js")' not in s:
+              marker = "</body>"
+              if marker not in s:
+                  raise SystemExit("No </body> found")
+              s = s.replace(marker, sw + "\n" + marker, 1)
+              changed = True
+          if changed:
+              p.write_text(s, encoding="utf-8")
+          print("PWA hooks:", "added" if changed else "already present")
+      - name: Commit PWA hooks
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Enable CRVT app installation"
+          git push
