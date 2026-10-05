@@ -1,0 +1,35 @@
+name: CRVT PDF header fix
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fix PDF header alignment
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("index.html")
+          s = p.read_text(encoding="utf-8")
+          old = '.pageHeader{height:17mm;display:grid;grid-template-columns:1fr auto;align-items:flex-start;column-gap:8mm;position:relative}.pageHeader .ensioMiniLogo{justify-self:start}.pageHeader .donorFixedLogo.mini{justify-self:end}.pageHeader .pageNum{position:absolute;right:0;bottom:0;font-size:8px;color:#9aa5ad}'
+          new = '.pageHeader{height:17mm;display:flex!important;grid-template-columns:none!important;align-items:flex-start!important;justify-content:space-between!important;column-gap:8mm;position:relative;width:100%!important}.pageHeader .ensioMiniLogo{justify-self:auto!important;flex:0 0 auto!important;align-self:flex-start!important}.pageHeader .donorFixedLogo.mini{justify-self:auto!important;margin-left:auto!important;flex:0 0 auto!important;align-self:flex-start!important;justify-content:flex-end!important}.pageHeader .pageNum{position:absolute!important;right:0!important;bottom:0!important;font-size:8px;color:#9aa5ad}'
+          if old not in s:
+              raise SystemExit("Target PDF header CSS not found")
+          s = s.replace(old, new, 1)
+          p.write_text(s, encoding="utf-8")
+          PY
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Fix CRVT PDF header alignment [skip ci]"
+          git push
