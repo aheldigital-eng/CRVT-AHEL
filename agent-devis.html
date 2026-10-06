@@ -130,7 +130,7 @@ function applyAuditToForm(a,source){
   const div=norm(findVal(m.d,['divisionnaire','tableau','extensionTableau']));
   if(div==='oui')tableau.checked=true;
   const bin=norm(findVal(m.d,['binome','binôme','besoinBinome','besoinBinôme']));
-  if(bin==='oui' || /demi|½|journee|journée/.test(bin)) binome.checked=true;
+  if(bin==='oui' || /demi|½|journee|journée/.test(bin)) { binome.checked=true; if(/journee|journée/.test(bin) && !/½|demi/.test(bin)) binomeDuration.value='full'; }
   if(m.comment)comment.value=m.comment;
   const info=document.getElementById('crvtInfo');
   info.className='importInfo ok';
