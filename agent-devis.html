@@ -86,25 +86,53 @@ function saveDraft(){localStorage.setItem('agentDevisDraft',JSON.stringify({clie
 function exportCsv(){if(!current.length){alert('Calculez d’abord le devis.');return}let csv='Référence;Prestation;Quantité;PU HT;Total HT\n'+current.map(x=>`${x.ref};"${x.label.replaceAll('"','""')}";${x.qty};${x.pu};${x.total}`).join('\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='agent-devis-proposition.csv';a.click();}
 function resetForm(){document.querySelectorAll('input[type=checkbox]').forEach(x=>x.checked=false);length.value=5;comment.value='';current=[];render('');}
 const client=document.getElementById('client'),name=document.getElementById('name'),power=document.getElementById('power'),phase=document.getElementById('phase'),length=document.getElementById('length'),location=document.getElementById('location'),comment=document.getElementById('comment'),tic=document.getElementById('tic'),tableau=document.getElementById('tableau'),percement=document.getElementById('percement'),terre=document.getElementById('terre'),binome=document.getElementById('binome'),geniecivil=document.getElementById('geniecivil');client.addEventListener('change',()=>{if(client.value==='CAP'){power.value='7.4';phase.value='mono'}render('')});
-function applyAuditToForm(a,source){
+function normalizeAgentMapping(a){
   const d=(a&&a.data)||{};
-  const donor=norm(a&&a.donneur||'');
-  if(donor.includes('bump'))client.value='BUMP';
-  else if(donor.includes('cap'))client.value='CAP';
-  else if(donor.includes('time'))client.value='T2P_HOME';
-  name.value=(a&&a.client)||'';
-  const pu=String(findVal(d,['puissance','puissanceSouscrite','puissance_borne'])||'').replace(',','.');
-  if(pu.includes('22'))power.value='22';else if(pu.includes('11'))power.value='11';else if(pu.includes('7'))power.value='7.4';
-  const ph=norm(findVal(d,['compteur','typeborne','typeBorne'])||'');
-  if(ph.includes('tri'))phase.value='tri';else if(ph.includes('mono'))phase.value='mono';
-  const env=norm(findVal(d,['environnement','environment'])||'');
-  if(env.includes('ext'))location.value='exterieur';else if(env.includes('int'))location.value='interieur';
-  const lg=findVal(d,['longueurcable','longueur','longueurCable','metrage','metrageCable','distance']);
-  if(lg!=='')length.value=lg;
-  const div=norm(findVal(d,['divisionnaire','tableau','extensionTableau']));if(div==='oui')tableau.checked=true;
+  const allText=JSON.stringify(a||'');
+  const phaseRaw=findVal(d,['compteur','phase','typePhase','typeborne','typeBorne','type_borne']);
+  const phaseText=norm(phaseRaw);
+  const powerRaw=String(findVal(d,['puissance','puissanceSouscrite','puissance_borne','puissanceBorne'])||'').replace(',','.');
+  const commentRaw=String(findVal(d,['commentaire','comment','observation','observations','note','notes'])||'');
+  const fullComment=(commentRaw+' '+String(a&&a.commentaire||'')+' '+String(a&&a.comment||'')).toLowerCase();
+  let ph='',pw='';
+  if(/mono|monophas/.test(phaseText)){ ph='mono'; pw='7.4'; }
+  else if(/tri|triphas/.test(phaseText)){
+    ph='tri';
+    if(/(?:^|[^0-9])22(?:[.,]?0)?\s*k?w?/.test(fullComment)||/\b22\b/.test(fullComment)) pw='22';
+    else if(/(?:^|[^0-9])11(?:[.,]?0)?\s*k?w?/.test(fullComment)||/\b11\b/.test(fullComment)) pw='11';
+    else if(/22/.test(powerRaw)) pw='22';
+    else if(/11/.test(powerRaw)) pw='11';
+  } else {
+    if(/7[.,]?4/.test(powerRaw)){ph='mono';pw='7.4';}
+    else if(/22/.test(powerRaw)){ph='tri';pw='22';}
+    else if(/11/.test(powerRaw)){ph='tri';pw='11';}
+  }
+  let loc=norm(findVal(d,['environnement','environment','emplacement','location','lieu']));
+  if(/ext|extérieur|exterieur/.test(loc)) loc='exterieur';
+  else if(/int|intérieur|interieur/.test(loc)) loc='interieur';
+  else loc='';
+  const lg=findVal(d,['longueurcable','longueur','longueurCable','metrage','metrageCable','distance','distanceCable','longueurInstallation']);
+  let donor=norm(a&&a.donneur||a&&a.donor||findVal(d,['donneur','donor']));
+  let cl='';
+  if(donor.includes('bump'))cl='BUMP';
+  else if(donor.includes('cap'))cl='CAP';
+  else if(donor.includes('time'))cl='T2P_HOME';
+  return {d,ph,pw,loc,lg,cl,comment:commentRaw||String(a&&a.commentaire||a&&a.comment||'')};
+}
+function applyAuditToForm(a,source){
+  const m=normalizeAgentMapping(a);
+  if(m.cl)client.value=m.cl;
+  name.value=(a&& (a.client||a.clientFinal||a.clientName))||'';
+  if(m.ph)phase.value=m.ph;
+  if(m.pw)power.value=m.pw;
+  if(m.loc)location.value=m.loc;
+  if(m.lg!=='')length.value=m.lg;
+  const div=norm(findVal(m.d,['divisionnaire','tableau','extensionTableau']));
+  if(div==='oui')tableau.checked=true;
+  if(m.comment)comment.value=m.comment;
   const info=document.getElementById('crvtInfo');
   info.className='importInfo ok';
-  info.innerHTML='<b>✓ CRVT récupéré automatiquement</b><br>Client : '+escapeHtml(name.value||'Non renseigné')+' · Donneur : '+escapeHtml(client.selectedOptions[0].text)+'<br>Source : '+escapeHtml(source)+' · Puissance : '+escapeHtml(power.selectedOptions[0].text)+' · Câble : '+escapeHtml(String(length.value))+' m';
+  info.innerHTML='<b>✓ CRVT récupéré automatiquement</b><br>Client : '+escapeHtml(name.value||'Non renseigné')+' · Donneur : '+escapeHtml(client.selectedOptions[0].text)+'<br>Source : '+escapeHtml(source)+' · Phase : '+escapeHtml(phase.selectedOptions[0].text)+' · Puissance : '+escapeHtml(power.selectedOptions[0].text)+' · Câble : '+escapeHtml(String(length.value))+' m';
   render('');
 }
 async function importAutoCRVT(){
