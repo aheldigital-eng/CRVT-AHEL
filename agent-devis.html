@@ -88,7 +88,7 @@ function resetForm(){document.querySelectorAll('input[type=checkbox]').forEach(x
 const client=document.getElementById('client'),name=document.getElementById('name'),power=document.getElementById('power'),phase=document.getElementById('phase'),length=document.getElementById('length'),location=document.getElementById('location'),comment=document.getElementById('comment'),tic=document.getElementById('tic'),tableau=document.getElementById('tableau'),percement=document.getElementById('percement'),terre=document.getElementById('terre'),binome=document.getElementById('binome'),geniecivil=document.getElementById('geniecivil');client.addEventListener('change',()=>{if(client.value==='CAP'){power.value='7.4';phase.value='mono'}render('')});
 function importAutoCRVT(){
   try{
-    const q=new URLSearchParams(location.search);
+    const q=new URLSearchParams(window.location.search);
     if(q.get('from')==='crvt'){
       const donor=norm(q.get('donneur')||'');
       if(donor.includes('bump'))client.value='BUMP';
@@ -135,5 +135,5 @@ function importAutoCRVT(){
     const info=document.getElementById('crvtInfo');info.className='importInfo ok';info.innerHTML='<b>✓ CRVT récupéré automatiquement</b><br>Les données ont été transférées depuis le CRVT.';render('');
   }catch(e){console.warn('Import automatique CRVT:',e)}
 }
-window.addEventListener('DOMContentLoaded',importAutoCRVT);
+window.addEventListener('DOMContentLoaded',importAutoCRVT);importAutoCRVT();
 </script></body></html>
