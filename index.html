@@ -574,12 +574,8 @@ function openPhotoPicker(sec,mode){
   const input=document.createElement("input");
   input.type="file";
   input.accept="image/*";
-  if(mode==="camera"){
-    input.setAttribute("capture","environment");
-  }else{
-    input.multiple=true;
-  }
-  input.setAttribute("aria-label",mode==="camera"?"Prendre une photo":"Choisir une ou plusieurs photos");
+  if(mode==="camera") input.setAttribute("capture","environment");
+  input.setAttribute("aria-label",mode==="camera"?"Prendre une photo":"Choisir une photo");
   input.style.position="fixed";
   input.style.width="1px";
   input.style.height="1px";
@@ -588,14 +584,10 @@ function openPhotoPicker(sec,mode){
   input.style.top="1px";
   input.style.zIndex="2147483647";
   document.body.appendChild(input);
-  const cleanup=()=>setTimeout(()=>{if(document.body.contains(input))input.remove()},250);
+  const cleanup=()=>{setTimeout(()=>{if(document.body.contains(input)) input.remove();},250);};
   input.addEventListener("change",()=>{
-    const files=Array.from(input.files||[]);
-    if(mode==="camera"){
-      if(files[0]) addPhoto(files[0],sec);
-    }else{
-      files.forEach(file=>addPhoto(file,sec));
-    }
+    const file=input.files&&input.files[0];
+    if(file) addPhoto(file,sec);
     cleanup();
   },{once:true});
   input.addEventListener("cancel",cleanup,{once:true});
