@@ -72,7 +72,7 @@ function importCRVT(input){
       info.className='importInfo '+(missing.length?'warn':'ok');
       info.innerHTML=`<b>✓ CRVT importé</b><br>Client : ${escapeHtml(name.value||'Non renseigné')} · Donneur : ${escapeHtml(client.selectedOptions[0].text)}<br><span class="sourceBadge">${missing.length?'À compléter : '+missing.join(', '):'Toutes les données compatibles ont été récupérées'}</span>`;
       if(missing.length){ warning=''; }
-      render('');
+      calculate();
     }catch(e){
       const info=document.getElementById('crvtInfo'); info.className='importInfo warn'; info.textContent='Impossible d’importer ce fichier CRVT : '+e.message;
     }
@@ -85,7 +85,7 @@ function render(w){document.getElementById('badge').textContent=document.getElem
 function saveDraft(){localStorage.setItem('agentDevisDraft',JSON.stringify({client:client.value,name:name.value,power:power.value,phase:phase.value,length:length.value,location:location.value,comment:comment.value,lines:current}));alert('Brouillon enregistré sur cet appareil.');}
 function exportCsv(){if(!current.length){alert('Calculez d’abord le devis.');return}let csv='Référence;Prestation;Quantité;PU HT;Total HT\n'+current.map(x=>`${x.ref};"${x.label.replaceAll('"','""')}";${x.qty};${x.pu};${x.total}`).join('\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='agent-devis-proposition.csv';a.click();}
 function resetForm(){document.querySelectorAll('input[type=checkbox]').forEach(x=>x.checked=false);length.value=5;comment.value='';current=[];render('');}
-const client=document.getElementById('client'),name=document.getElementById('name'),power=document.getElementById('power'),phase=document.getElementById('phase'),length=document.getElementById('length'),location=document.getElementById('location'),comment=document.getElementById('comment'),tic=document.getElementById('tic'),tableau=document.getElementById('tableau'),percement=document.getElementById('percement'),terre=document.getElementById('terre'),binome=document.getElementById('binome'),geniecivil=document.getElementById('geniecivil');client.addEventListener('change',()=>{if(client.value==='CAP'){power.value='7.4';phase.value='mono'}render('')});[tic,tableau,percement,terre,binome,binomeDuration,geniecivil,power,phase,length,location].forEach(el=>el.addEventListener('change',()=>{if(el===binome||el===binomeDuration)binomeDurationWrap.style.display=binome.checked?'block':'none';calculate();}));binomeDurationWrap.style.display=binome.checked?'block':'none';
+const client=document.getElementById('client'),name=document.getElementById('name'),power=document.getElementById('power'),phase=document.getElementById('phase'),length=document.getElementById('length'),location=document.getElementById('location'),comment=document.getElementById('comment'),tic=document.getElementById('tic'),tableau=document.getElementById('tableau'),percement=document.getElementById('percement'),terre=document.getElementById('terre'),binome=document.getElementById('binome'),binomeDuration=document.getElementById('binomeDuration'),binomeDurationWrap=document.getElementById('binomeDurationWrap'),geniecivil=document.getElementById('geniecivil');client.addEventListener('change',()=>{if(client.value==='CAP'){power.value='7.4';phase.value='mono'}render('')});[tic,tableau,percement,terre,binome,binomeDuration,geniecivil,power,phase,length,location].forEach(el=>el.addEventListener('change',()=>{if(el===binome||el===binomeDuration)binomeDurationWrap.style.display=binome.checked?'block':'none';calculate();}));binomeDurationWrap.style.display=binome.checked?'block':'none';
 function normalizeAgentMapping(a){
   const d=(a&&a.data)||{};
   const allText=JSON.stringify(a||'');
@@ -135,7 +135,7 @@ function applyAuditToForm(a,source){
   const info=document.getElementById('crvtInfo');
   info.className='importInfo ok';
   info.innerHTML='<b>✓ CRVT récupéré automatiquement</b><br>Client : '+escapeHtml(name.value||'Non renseigné')+' · Donneur : '+escapeHtml(client.selectedOptions[0].text)+'<br>Source : '+escapeHtml(source)+' · Phase : '+escapeHtml(phase.selectedOptions[0].text)+' · Puissance : '+escapeHtml(power.selectedOptions[0].text)+' · Câble : '+escapeHtml(String(length.value))+' m';
-  render('');
+  calculate();
 }
 async function importAutoCRVT(){
   try{
