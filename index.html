@@ -400,7 +400,7 @@ if(audit.sections.borne)h+=`<section id="borne">${moduleCard("borne","EMPLACEMEN
 h+=`<section class="card" id="synthese"><span class="tag">SYNTHÈSE</span><h2>Synthèse automatique de l’audit</h2><p class="small">Cette synthèse se met à jour automatiquement avec les modules, photos, observations et contrôles de l’audit.</p><div id="summary"></div></section>`;
 h+=`<section class="card noPrint" id="actions">
 <div class="draftBar"><div><b>Audit #${esc(String(audit.id).slice(-6))}</b><div class="smallMuted">Sauvegarde automatique du brouillon activée · <span id="saveState">Prêt à enregistrer</span></div></div><div style="display:flex;align-items:center;gap:8px"><span id="completionBadge" class="statusBadge">État</span><span class="statusBadge ${audit.status==="Terminé"?"done":""}">${esc(audit.status||"Brouillon")}</span></div></div>
-<div class="row"><button class="btn primary" onclick="saveAudit()">💾 Enregistrer l’audit</button><button class="btn secondary" onclick="finishAudit()">✓ Marquer terminé</button><button class="btn primary" onclick="preReport()">📄 Vérifier & générer</button><button class="btn secondary" onclick="shareCurrentAudit()">📤 Partager le compte-rendu</button><button class="btn secondary" onclick="newAudit()">➕ Nouvel audit</button></div>
+<div class="row"><button class="btn primary" onclick="saveAudit()">💾 Enregistrer l’audit</button><button class="btn secondary" onclick="finishAudit()">✓ Marquer terminé</button><button class="btn primary" onclick="preReport()">📄 Vérifier & générer</button><button class="btn secondary" onclick="shareCurrentAudit()">📤 Partager le compte-rendu</button><button class="btn primary" onclick="sendCurrentAuditToAgentDevis()">💶 Agent Devis</button><button class="btn secondary" onclick="newAudit()">➕ Nouvel audit</button></div>
 <div class="pdfThemeLauncher">
   <div class="pdfThemeInfo"><div id="pdfThemeSwatch" class="pdfThemeSwatch"></div><div><div class="pdfThemeName" id="pdfThemeName">Design PDF : ENSIO Pro</div><div class="pdfThemeHint">Choisis le style du rapport avant de générer le PDF.</div></div></div>
   <button type="button" class="btn outline" onclick="openPdfThemePicker()">🎨 Choisir le design PDF</button>
@@ -792,6 +792,29 @@ async function shareSavedAudit(id){
   if(a) await shareAuditObject(a);
 }
 
+async function sendAuditToAgentDevis(a){
+  if(!a)return;
+  try{
+    await saveAudit();
+    sessionStorage.setItem("crvtToAgentDevis",JSON.stringify({audit:JSON.parse(JSON.stringify(a)),source:"CRVT-AHEL",version:"auto-v2"}));
+    window.location.href="./agent-devis.html?from=crvt";
+  }catch(e){
+    console.error(e);
+    toast("Impossible de préparer Agent Devis.");
+  }
+}
+async function sendCurrentAuditToAgentDevis(){ await sendAuditToAgentDevis(audit); }
+async function sendSavedAuditToAgentDevis(id){
+  const a=historyCache.find(x=>x.id===id)||await idbGet(id);
+  if(!a){toast("Audit introuvable.");return;}
+  try{
+    sessionStorage.setItem("crvtToAgentDevis",JSON.stringify({audit:JSON.parse(JSON.stringify(a)),source:"CRVT-AHEL",version:"auto-v2"}));
+    window.location.href="./agent-devis.html?from=crvt";
+  }catch(e){
+    console.error(e);
+    toast("Impossible de préparer Agent Devis.");
+  }
+}
 async function duplicateAudit(id){
   const src=historyCache.find(x=>x.id===id)||await idbGet(id);
   if(!src)return;
@@ -982,7 +1005,7 @@ async function history(){
     const photos=Object.values(x.photos||{}).reduce((n,v)=>n+(v||[]).length,0);
     const status=x.status||"Brouillon";
     const dt=x.updatedAt?new Date(x.updatedAt).toLocaleString("fr-FR",{dateStyle:"short",timeStyle:"short"}):formatDateFR(x.date);
-    return `<div class="item"><div class="historyMeta"><b>${esc(x.client||"Sans nom")}</b><span class="statusBadge ${status==="Terminé"?"done":""}">${esc(status)}</span></div><div class="smallMuted">Audit #${esc(String(x.id).slice(-6))} · ${esc(formatDateFR(x.date||""))} · ${esc(x.auditeur||"Non renseigné")} · ${photos} photo(s) · modifié ${esc(dt)}</div><div class="row noPrint" style="margin-top:8px"><button class="btn secondary" onclick="loadAudit(${x.id})">Ouvrir</button><button class="btn secondary" onclick="shareSavedAudit(${x.id})">📤 Partager</button><button class="btn secondary" onclick="duplicateAudit(${x.id})">Dupliquer</button><button class="btn danger" onclick="deleteAudit(${x.id})">Supprimer</button></div></div>`;
+    return `<div class="item"><div class="historyMeta"><b>${esc(x.client||"Sans nom")}</b><span class="statusBadge ${status==="Terminé"?"done":""}">${esc(status)}</span></div><div class="smallMuted">Audit #${esc(String(x.id).slice(-6))} · ${esc(formatDateFR(x.date||""))} · ${esc(x.auditeur||"Non renseigné")} · ${photos} photo(s) · modifié ${esc(dt)}</div><div class="row noPrint" style="margin-top:8px"><button class="btn secondary" onclick="loadAudit(${x.id})">Ouvrir</button><button class="btn primary" onclick="sendSavedAuditToAgentDevis(${x.id})">💶 Agent Devis</button><button class="btn secondary" onclick="shareSavedAudit(${x.id})">📤 Partager</button><button class="btn secondary" onclick="duplicateAudit(${x.id})">Dupliquer</button><button class="btn danger" onclick="deleteAudit(${x.id})">Supprimer</button></div></div>`;
   }).join("");
 }
 
