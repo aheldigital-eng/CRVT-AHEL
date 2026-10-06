@@ -109,12 +109,37 @@ function applyAuditToForm(a,source){
 }
 async function importAutoCRVT(){
   try{
+    // Pont robuste : charger CRVT dans une iframe du même domaine puis lire
+    // son audit courant en mémoire. Cela évite tout téléchargement JSON.
+    const iframe=document.createElement('iframe');
+    iframe.src='./?agentBridge='+Date.now();
+    iframe.style.cssText='position:fixed;width:1px;height:1px;left:-10px;top:-10px;border:0;opacity:0;pointer-events:none;';
+    document.body.appendChild(iframe);
+    const auditFromPage=await new Promise((resolve)=>{
+      let done=false;
+      const finish=v=>{if(done)return;done=true;try{iframe.remove()}catch(e){}resolve(v)};
+      iframe.addEventListener('load',async()=>{
+        try{
+          await new Promise(r=>setTimeout(r,250));
+          const w=iframe.contentWindow;
+          const raw=w.eval("typeof audit !== 'undefined' ? JSON.stringify(audit) : null");
+          finish(raw?JSON.parse(raw):null);
+        }catch(e){finish(null)}
+      },{once:true});
+      setTimeout(()=>finish(null),4000);
+    });
+    if(auditFromPage){
+      applyAuditToForm(auditFromPage,'CRVT courant');
+      return;
+    }
+
     const q=new URLSearchParams(window.location.search);
     if(q.get('from')==='crvt'){
       const a={donneur:q.get('donneur')||'',client:q.get('client')||'',data:{puissance:q.get('puissance')||'',compteur:q.get('phase')||'',longueurcable:q.get('longueur')||'',environnement:q.get('location')||'',divisionnaire:q.get('tableau')||''}};
       applyAuditToForm(a,'transfert CRVT');
       return;
     }
+
     const raw=sessionStorage.getItem('crvtToAgentDevis')||localStorage.getItem('crvtToAgentDevis');
     if(raw){
       const payload=JSON.parse(raw);
@@ -122,6 +147,7 @@ async function importAutoCRVT(){
       applyAuditToForm(payload&&payload.audit?payload.audit:payload,'stockage CRVT');
       return;
     }
+
     const db=await new Promise((resolve,reject)=>{
       const req=indexedDB.open('auditTerrainV26DB',1);
       req.onsuccess=()=>resolve(req.result);
