@@ -129,6 +129,8 @@ function applyAuditToForm(a,source){
   if(m.lg!=='')length.value=m.lg;
   const div=norm(findVal(m.d,['divisionnaire','tableau','extensionTableau']));
   if(div==='oui')tableau.checked=true;
+  const bin=norm(findVal(m.d,['binome','binôme','besoinBinome','besoinBinôme']));
+  if(bin==='oui' || /demi|½|journee|journée/.test(bin)) binome.checked=true;
   if(m.comment)comment.value=m.comment;
   const info=document.getElementById('crvtInfo');
   info.className='importInfo ok';
