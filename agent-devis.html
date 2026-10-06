@@ -61,7 +61,7 @@ function importCRVT(input){
       if(a.dossier) noteParts.push('Dossier : '+a.dossier);
       if(d.divisionnaire==='Oui'||d.tableau==='Oui'||d.extensionTableau==='Oui') tableau.checked=true;
       if(d.terre==='Oui'||d.piquet==='Oui'||d.priseTerre==='Oui') terre.checked=true;
-      if(d.binome==='Oui') binome.checked=true;
+      if(d.binome==='Oui' || d.binome==='Oui — ½ journée' || d.binome==='Oui — journée') { binome.checked=true; if(d.binome==='Oui — journée') binomeDuration.value='full'; }
       comment.value=noteParts.join(' | ');
       const missing=[];
       if(!clientMap) missing.push('donneur d’ordre');
