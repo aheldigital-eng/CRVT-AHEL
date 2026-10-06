@@ -1,4 +1,4 @@
-const CACHE_NAME = "crvt-v1-46-restore";
+const CACHE_NAME = "crvt-v1-46";
 const APP_SHELL = ["./","./index.html","./manifest.json","./icons/crvt-v5.svg"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
