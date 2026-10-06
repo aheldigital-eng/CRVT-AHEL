@@ -792,12 +792,15 @@ async function shareSavedAudit(id){
   if(a) await shareAuditObject(a);
 }
 
-async function sendAuditToAgentDevis(a){
+async async function sendAuditToAgentDevis(a){
   if(!a)return;
   try{
     await saveAudit();
-    sessionStorage.setItem("crvtToAgentDevis",JSON.stringify({audit:JSON.parse(JSON.stringify(a)),source:"CRVT-AHEL",version:"auto-v2"}));
-    window.location.href="./agent-devis.html?from=crvt";
+    const payload={audit:JSON.parse(JSON.stringify(a)),source:"CRVT-AHEL",version:"auto-v3"};
+    const raw=JSON.stringify(payload);
+    sessionStorage.setItem("crvtToAgentDevis",raw);
+    localStorage.setItem("crvtToAgentDevis",raw);
+    window.location.href="./agent-devis.html?from=crvt&v="+Date.now();
   }catch(e){
     console.error(e);
     toast("Impossible de préparer Agent Devis.");
