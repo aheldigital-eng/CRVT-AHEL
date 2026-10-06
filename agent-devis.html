@@ -86,53 +86,54 @@ function saveDraft(){localStorage.setItem('agentDevisDraft',JSON.stringify({clie
 function exportCsv(){if(!current.length){alert('Calculez d’abord le devis.');return}let csv='Référence;Prestation;Quantité;PU HT;Total HT\n'+current.map(x=>`${x.ref};"${x.label.replaceAll('"','""')}";${x.qty};${x.pu};${x.total}`).join('\n');let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='agent-devis-proposition.csv';a.click();}
 function resetForm(){document.querySelectorAll('input[type=checkbox]').forEach(x=>x.checked=false);length.value=5;comment.value='';current=[];render('');}
 const client=document.getElementById('client'),name=document.getElementById('name'),power=document.getElementById('power'),phase=document.getElementById('phase'),length=document.getElementById('length'),location=document.getElementById('location'),comment=document.getElementById('comment'),tic=document.getElementById('tic'),tableau=document.getElementById('tableau'),percement=document.getElementById('percement'),terre=document.getElementById('terre'),binome=document.getElementById('binome'),geniecivil=document.getElementById('geniecivil');client.addEventListener('change',()=>{if(client.value==='CAP'){power.value='7.4';phase.value='mono'}render('')});
-function importAutoCRVT(){
+function applyAuditToForm(a,source){
+  const d=(a&&a.data)||{};
+  const donor=norm(a&&a.donneur||'');
+  if(donor.includes('bump'))client.value='BUMP';
+  else if(donor.includes('cap'))client.value='CAP';
+  else if(donor.includes('time'))client.value='T2P_HOME';
+  name.value=(a&&a.client)||'';
+  const pu=String(findVal(d,['puissance','puissanceSouscrite','puissance_borne'])||'').replace(',','.');
+  if(pu.includes('22'))power.value='22';else if(pu.includes('11'))power.value='11';else if(pu.includes('7'))power.value='7.4';
+  const ph=norm(findVal(d,['compteur','typeborne','typeBorne'])||'');
+  if(ph.includes('tri'))phase.value='tri';else if(ph.includes('mono'))phase.value='mono';
+  const env=norm(findVal(d,['environnement','environment'])||'');
+  if(env.includes('ext'))location.value='exterieur';else if(env.includes('int'))location.value='interieur';
+  const lg=findVal(d,['longueurcable','longueur','longueurCable','metrage','metrageCable','distance']);
+  if(lg!=='')length.value=lg;
+  const div=norm(findVal(d,['divisionnaire','tableau','extensionTableau']));if(div==='oui')tableau.checked=true;
+  const info=document.getElementById('crvtInfo');
+  info.className='importInfo ok';
+  info.innerHTML='<b>✓ CRVT récupéré automatiquement</b><br>Client : '+escapeHtml(name.value||'Non renseigné')+' · Donneur : '+escapeHtml(client.selectedOptions[0].text)+'<br>Source : '+escapeHtml(source)+' · Puissance : '+escapeHtml(power.selectedOptions[0].text)+' · Câble : '+escapeHtml(String(length.value))+' m';
+  render('');
+}
+async function importAutoCRVT(){
   try{
     const q=new URLSearchParams(window.location.search);
     if(q.get('from')==='crvt'){
-      const donor=norm(q.get('donneur')||'');
-      if(donor.includes('bump'))client.value='BUMP';
-      else if(donor.includes('cap'))client.value='CAP';
-      else if(donor.includes('time'))client.value='T2P_HOME';
-      name.value=q.get('client')||'';
-      const pu=String(q.get('puissance')||'').replace(',','.');
-      if(pu.includes('22'))power.value='22';
-      else if(pu.includes('11'))power.value='11';
-      else if(pu.includes('7'))power.value='7.4';
-      const ph=norm(q.get('phase')||'');
-      if(ph.includes('tri'))phase.value='tri';
-      else if(ph.includes('mono'))phase.value='mono';
-      const env=norm(q.get('location')||'');
-      if(env.includes('ext'))location.value='exterieur';
-      else if(env.includes('int'))location.value='interieur';
-      const lg=q.get('longueur')||'';
-      if(lg!=='')length.value=lg;
-      if(norm(q.get('tableau')||'')==='oui')tableau.checked=true;
-      const info=document.getElementById('crvtInfo');
-      info.className='importInfo ok';
-      info.innerHTML='<b>✓ CRVT transféré automatiquement</b><br>Client : '+escapeHtml(name.value||'Non renseigné')+' · Donneur : '+escapeHtml(client.selectedOptions[0].text)+'<br>Puissance : '+escapeHtml(power.selectedOptions[0].text)+' · Phases : '+escapeHtml(phase.selectedOptions[0].text)+' · Câble : '+escapeHtml(length.value)+' m';
-      render('');
+      const a={donneur:q.get('donneur')||'',client:q.get('client')||'',data:{puissance:q.get('puissance')||'',compteur:q.get('phase')||'',longueurcable:q.get('longueur')||'',environnement:q.get('location')||'',divisionnaire:q.get('tableau')||''}};
+      applyAuditToForm(a,'transfert CRVT');
       return;
     }
     const raw=sessionStorage.getItem('crvtToAgentDevis')||localStorage.getItem('crvtToAgentDevis');
-    if(!raw)return;
-    const payload=JSON.parse(raw);
-    sessionStorage.removeItem('crvtToAgentDevis');localStorage.removeItem('crvtToAgentDevis');
-    const a=payload&&payload.audit?payload.audit:payload;
-    const d=a&&(a.data||{})||{};
-    const donor=norm(a.donneur||a.donor||payload.donneur||'');
-    if(donor.includes('bump'))client.value='BUMP';else if(donor.includes('cap'))client.value='CAP';else if(donor.includes('time'))client.value='T2P_HOME';
-    name.value=a.client||a.clientFinal||a.clientName||payload.client||'';
-    const pu=String(findVal(d,['puissance','puissanceSouscrite','puissance_borne'])||payload.puissance||'').replace(',','.');
-    if(pu.includes('22'))power.value='22';else if(pu.includes('11'))power.value='11';else if(pu.includes('7'))power.value='7.4';
-    const ph=norm(findVal(d,['compteur','typeborne','typeBorne'])||payload.phase||'');
-    if(ph.includes('tri'))phase.value='tri';else if(ph.includes('mono'))phase.value='mono';
-    const env=norm(findVal(d,['environnement','environment'])||payload.location||'');
-    if(env.includes('ext'))location.value='exterieur';else if(env.includes('int'))location.value='interieur';
-    const lg=findVal(d,['longueurcable','longueur','longueurCable','metrage','metrageCable','distance'])||payload.longueur||payload.length;
-    if(lg!=='')length.value=lg;
-    const div=norm(findVal(d,['divisionnaire','tableau','extensionTableau']));if(div==='oui')tableau.checked=true;
-    const info=document.getElementById('crvtInfo');info.className='importInfo ok';info.innerHTML='<b>✓ CRVT récupéré automatiquement</b><br>Les données ont été transférées depuis le CRVT.';render('');
+    if(raw){
+      const payload=JSON.parse(raw);
+      sessionStorage.removeItem('crvtToAgentDevis');localStorage.removeItem('crvtToAgentDevis');
+      applyAuditToForm(payload&&payload.audit?payload.audit:payload,'stockage CRVT');
+      return;
+    }
+    const db=await new Promise((resolve,reject)=>{
+      const req=indexedDB.open('auditTerrainV26DB',1);
+      req.onsuccess=()=>resolve(req.result);
+      req.onerror=()=>reject(req.error);
+    });
+    const audits=await new Promise((resolve,reject)=>{
+      const tx=db.transaction('audits','readonly'),req=tx.objectStore('audits').getAll();
+      req.onsuccess=()=>resolve(req.result||[]);req.onerror=()=>reject(req.error);
+    });
+    if(!audits.length)return;
+    audits.sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')));
+    applyAuditToForm(audits[0],'base CRVT');
   }catch(e){console.warn('Import automatique CRVT:',e)}
 }
 window.addEventListener('DOMContentLoaded',importAutoCRVT);importAutoCRVT();
