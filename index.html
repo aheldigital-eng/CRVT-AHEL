@@ -796,11 +796,18 @@ async async function sendAuditToAgentDevis(a){
   if(!a)return;
   try{
     await saveAudit();
-    const payload={audit:JSON.parse(JSON.stringify(a)),source:"CRVT-AHEL",version:"auto-v3"};
-    const raw=JSON.stringify(payload);
-    sessionStorage.setItem("crvtToAgentDevis",raw);
-    localStorage.setItem("crvtToAgentDevis",raw);
-    window.location.href="./agent-devis.html?from=crvt&v="+Date.now();
+    const d=a.data||{};
+    const params=new URLSearchParams();
+    params.set("from","crvt");
+    params.set("v",String(Date.now()));
+    params.set("client",a.client||"");
+    params.set("donneur",a.donneur||"");
+    params.set("puissance",d.puissance||"");
+    params.set("phase",d.compteur||d.typeborne||"");
+    params.set("longueur",d.longueurcable||"");
+    params.set("location",d.environnement||"");
+    params.set("tableau",d.divisionnaire||"");
+    window.location.href="./agent-devis.html?"+params.toString();
   }catch(e){
     console.error(e);
     toast("Impossible de préparer Agent Devis.");
@@ -810,14 +817,9 @@ async function sendCurrentAuditToAgentDevis(){ await sendAuditToAgentDevis(audit
 async function sendSavedAuditToAgentDevis(id){
   const a=historyCache.find(x=>x.id===id)||await idbGet(id);
   if(!a){toast("Audit introuvable.");return;}
-  try{
-    sessionStorage.setItem("crvtToAgentDevis",JSON.stringify({audit:JSON.parse(JSON.stringify(a)),source:"CRVT-AHEL",version:"auto-v2"}));
-    window.location.href="./agent-devis.html?from=crvt";
-  }catch(e){
-    console.error(e);
-    toast("Impossible de préparer Agent Devis.");
-  }
+  await sendAuditToAgentDevis(a);
 }
+
 async function duplicateAudit(id){
   const src=historyCache.find(x=>x.id===id)||await idbGet(id);
   if(!src)return;
