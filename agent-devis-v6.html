@@ -139,7 +139,7 @@ function makeZip(files){
   });
   var cd=[],cdSize=0;
   central.forEach(function(x){
-    var h=[80,75,1,2,20,0,20,0,0,0,0,0,0,0].concat(u32(x.crc),u32(x.data.length),u32(x.data.length),u16(x.name.length),[0,0,0,0,0,0,0,0],u32(x.offset),Array.from(x.name));
+    var h=[80,75,1,2,20,0,20,0,0,0,0,0,0,0,0,0].concat(u32(x.crc),u32(x.data.length),u32(x.data.length),u16(x.name.length),[0,0,0,0,0,0,0,0],u32(x.offset),Array.from(x.name));
     cd.push(new Uint8Array(h));cdSize+=h.length;
   });
   var e=[80,75,5,6,0,0,0,0].concat(u16(central.length),u16(central.length),u32(cdSize),u32(offset),[0,0]);
