@@ -1,0 +1,155 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Agent Devis V2 — CRVT</title><style>
+:root{font-family:Inter,Arial,sans-serif;color:#172033;background:#f4f6f9}*{box-sizing:border-box}body{margin:0}.top{background:#101827;color:white;padding:18px 24px;display:flex;justify-content:space-between;align-items:center}.brand{font-size:21px;font-weight:800}.tag{font-size:12px;opacity:.7}.wrap{max-width:1180px;margin:24px auto;padding:0 18px}.grid{display:grid;grid-template-columns:330px 1fr;gap:18px}.card{background:white;border:1px solid #e1e5eb;border-radius:14px;padding:18px;box-shadow:0 2px 8px #0000000a}label{display:block;font-size:13px;font-weight:700;margin:13px 0 6px}input,select,button,textarea{font:inherit}input,select,textarea{width:100%;padding:10px 11px;border:1px solid #ccd3dd;border-radius:9px;background:white}button{border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer}.primary{background:#172033;color:#fff}.secondary{background:#eef1f5;color:#172033}.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}.checks{display:grid;grid-template-columns:1fr 1fr;gap:8px}.check{display:flex;align-items:center;gap:7px;font-size:13px;padding:8px;background:#f7f8fa;border-radius:8px}.check input{width:auto}.summary{display:flex;justify-content:space-between;align-items:end;border-bottom:1px solid #e5e8ed;padding-bottom:12px;margin-bottom:12px}.total{font-size:25px;font-weight:800}.pill{display:inline-block;padding:5px 8px;border-radius:99px;background:#eaf1ff;font-size:12px;font-weight:700}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:10px 8px;border-bottom:1px solid #edf0f3;text-align:left;font-size:13px}.table th{color:#667085}.num{text-align:right!important}.muted{color:#667085;font-size:13px}.actions{display:flex;gap:8px;margin-top:15px}.notice{padding:10px 12px;border-radius:9px;background:#fff7e6;color:#7a5100;font-size:13px;margin-bottom:12px}.hidden{display:none}@media(max-width:800px){.grid{grid-template-columns:1fr}.row{grid-template-columns:1fr}}
+.upload{display:flex;align-items:center;justify-content:center;background:#eef1f5;color:#172033;border-radius:9px;padding:11px 14px;font-weight:700;cursor:pointer;text-align:center}.upload input{display:none}.importCard{border:2px solid #d8e7ef}.importInfo{margin-top:10px;padding:10px 12px;border-radius:9px;background:#f6fafc;border:1px solid #dbe7ee;font-size:13px}.importInfo.ok{background:#effcf5;border-color:#b7ebcc;color:#166534}.importInfo.warn{background:#fff8e8;border-color:#f1d38a;color:#7a5100}.sourceBadge{display:inline-block;margin-top:6px;padding:4px 8px;border-radius:99px;background:#eaf1ff;font-size:11px;font-weight:800}</style></head><body>
+<header class="top"><div><div class="brand">AGENT DEVIS V2</div><div class="tag">CRVT · moteur de chiffrage indépendant</div></div><div class="tag">V1 — BUMP · CAP’BORNES · TIME2PLUG</div></header>
+<div class="wrap"><div class="grid">
+<div class="card importCard"><h2>Importer un CRVT</h2><p class="muted">Importe le fichier JSON exporté depuis le CRVT. L’Agent récupère automatiquement les informations compatibles et te signale celles qui doivent encore être renseignées.</p><label class="upload"><input id="crvtFile" type="file" accept="application/json,.json" onchange="importCRVT(this)">📥 Importer le CRVT</label><div id="crvtInfo" class="importInfo hidden"></div></div>
+<section class="card"><h2>Chantier</h2><label>Donneur d’ordre</label><select id="client"><option value="BUMP">BUMP</option><option value="CAP">Cap’Bornes</option><option value="T2P_HOME">Time2Plug — @Home</option><option value="T2P_B2B">Time2Plug — SmallBTB</option></select>
+<label>Client / chantier</label><input id="name" placeholder="Nom du client"><div class="row"><div><label>Puissance</label><select id="power"><option value="7.4">7,4 kW</option><option value="11">11 kW</option><option value="22">22 kW</option></select></div><div><label>Phases</label><select id="phase"><option value="mono">Monophasé</option><option value="tri">Triphasé</option></select></div></div>
+<div class="row"><div><label>Longueur câble (m)</label><input id="length" type="number" min="0" step="0.1" value="5"></div><div><label>Emplacement</label><select id="location"><option value="interieur">Intérieur</option><option value="exterieur">Extérieur</option></select></div></div>
+<label>Options relevées</label><div class="checks"><label class="check"><input type="checkbox" id="tic"> TIC</label><label class="check"><input type="checkbox" id="tableau"> Extension tableau</label><label class="check"><input type="checkbox" id="percement"> Percement supplémentaire</label><label class="check"><input type="checkbox" id="terre"> Piquet de terre</label><label class="check"><input type="checkbox" id="binome"> Binôme</label><div id="binomeDurationWrap" style="grid-column:1/-1;display:none"><label>Durée du binôme</label><select id="binomeDuration"><option value="half">½ journée</option><option value="full">1 journée</option></select></div><label class="check"><input type="checkbox" id="geniecivil"> Génie civil</label></div>
+<label>Commentaire</label><textarea id="comment" rows="3" placeholder="Travaux particuliers…"></textarea><div class="actions"><button class="primary" onclick="calculate()">Calculer le devis</button><button class="secondary" onclick="resetForm()">Réinitialiser</button></div></section>
+<section class="card"><div class="summary"><div><h2 style="margin:0 0 6px">Proposition de devis</h2><span id="badge" class="pill">BUMP</span><div id="status" class="muted" style="margin-top:7px">Saisissez les données du chantier puis calculez.</div></div><div class="total" id="total">0,00 € HT</div></div><div id="warning" class="notice hidden"></div><table class="table"><thead><tr><th>Référence</th><th>Prestation</th><th class="num">Qté</th><th class="num">PU HT</th><th class="num">Total HT</th></tr></thead><tbody id="lines"><tr><td colspan="5" class="muted">Aucune ligne calculée.</td></tr></tbody></table><div class="actions"><button class="primary" onclick="saveDraft()">Enregistrer brouillon</button><button class="secondary" onclick="exportBpuExcel()">📊 Télécharger BPU Excel</button><button class="secondary" onclick="exportCsv()">Exporter CSV</button></div><p class="muted" style="margin-top:14px">V1 : le calcul est volontairement transparent. Le moteur affiche les lignes avant toute génération du devis final.</p></section></div></div>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script><script>var current=[];
+var E=function(id){return document.getElementById(id)};
+var elClient=E('client'),elName=E('name'),elPower=E('power'),elPhase=E('phase'),elLength=E('length'),elLocation=E('location'),elComment=E('comment'),elTic=E('tic'),elTableau=E('tableau'),elPercement=E('percement'),elTerre=E('terre'),elBinome=E('binome'),elBinomeDuration=E('binomeDuration'),elBinomeWrap=E('binomeDurationWrap'),elGenieCivil=E('geniecivil');
+var BUMP_A=[['A-1',5,637],['A-2',10,695],['A-3',20,809]];
+var CAP_MAIN={'7.4-mono-interieur':[534.85,650.75],'7.4-mono-exterieur':[641.25,758.10],'11-tri-interieur':[786.60,961.40],'11-tri-exterieur':[893.95,1066.85],'22-tri-interieur':[889.20,1061.15],'22-tri-exterieur':[995.60,1165.65]};
+var CAP_TIC={interieur:[66.5,140.6],exterieur:[131.1,205.2]};
+var T2P_HOME={mono:[848,990,24],tri:[1338.65,1617.95,29]};
+var T2P_B2B={mono:[682.10,874,1068.75,34.20],tri:[1203.65,1482.95,1636.85,42.75]};
+function money(n){return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(n)}
+function makeLine(ref,label,qty,pu){return{ref:ref,label:label,qty:qty,pu:pu,total:qty*pu}}
+function render(w){
+ E('badge').textContent=elClient.options[elClient.selectedIndex].text;
+ E('warning').textContent=w||'';
+ E('warning').classList.toggle('hidden',!w);
+ E('status').textContent=current.length?current.length+' ligne(s) proposée(s) — à contrôler avant validation.':'Aucune ligne automatique.';
+ E('lines').innerHTML=current.length?current.map(function(x){return '<tr><td><b>'+x.ref+'</b></td><td>'+x.label+'</td><td class="num">'+x.qty+'</td><td class="num">'+money(x.pu)+'</td><td class="num"><b>'+money(x.total)+'</b></td></tr>'}).join(''):'<tr><td colspan="5" class="muted">Aucune ligne calculée.</td></tr>';
+ E('total').textContent=money(current.reduce(function(s,x){return s+x.total},0))+' HT';
+}
+window.calculate=function(){
+ current=[];
+ var c=elClient.value,p=parseFloat(elPower.value),ph=elPhase.value,l=parseFloat(elLength.value)||0,loc=elLocation.value,w='';
+ if(c==='BUMP'){
+   if(p===7.4){var x=BUMP_A.find(function(a){return l<=a[1]});if(x)current.push(makeLine(x[0],'Forfait installation 7,4 kW — ≤ '+x[1]+' m',1,x[2]));else w='BUMP : longueur supérieure à 20 m, validation manuelle nécessaire.'}
+   else if(p===22)w='BUMP : les tarifs 22 kW B-1/B-2/B-3 du BPU transmis sont non renseignés.';
+   else w='BUMP : configuration non couverte.';
+   if(elTableau.checked)current.push(makeLine('C-6','Extension tableau élec / tableautin dédié',1,72));
+   if(elPercement.checked)current.push(makeLine('C-4','Percement supplémentaire ≤15 cm',1,73));
+   if(elTerre.checked)current.push(makeLine('C-3','Piquet de terre',1,112));
+   if(elBinome.checked)w=(w?w+' ':'')+'BUMP : tarif binôme non renseigné dans le BPU, validation manuelle nécessaire.';
+ }else if(c==='CAP'){
+   var vals=CAP_MAIN[p+'-'+ph+'-'+loc];
+   if(vals){var idx=l<=5?0:1;current.push(makeLine('FORFAIT','Installation '+p+' kW — '+loc+' — '+(idx?15:5)+' m',1,vals[idx]));if(l>15)current.push(makeLine('M+','Métré câble au-delà de 15 m',l-15,8.4366667))}
+   else w='Configuration Cap’Bornes non couverte par le BPU.';
+   if(elTic.checked){var tv=CAP_TIC[loc];if(tv)current.push(makeLine('TIC','Raccordement TIC — '+loc,1,tv[l<=5?0:1]))}
+   if(elTableau.checked)current.push(makeLine('','Extension tableau élec / tableautin',1,72));
+   if(elPercement.checked)current.push(makeLine('','Percement supplémentaire',1,73));
+   if(elTerre.checked)current.push(makeLine('','Nouveau piquet de terre',1,112));
+   if(elBinome.checked){var full=elBinomeDuration.value==='full';current.push(makeLine('',full?'1 journée homme — binôme':'1/2 journée homme — binôme',1,full?472:266))}
+ }else{
+   var arr=c==='T2P_HOME'?T2P_HOME:T2P_B2B;
+   var a=arr[ph];
+   if(!a)w='Configuration Time2Plug non couverte.';
+   else{var ix=l<=10?0:l<=20?1:2;if(c==='T2P_HOME'){current.push(makeLine('FORFAIT','Time2Plug @Home — '+ph+' — '+(ix===0?'0–10':'10–20')+' m',1,a[ix]));if(l>20)current.push(makeLine('ML+','Métré supplémentaire',l-20,a[2]))}else{current.push(makeLine('FORFAIT','Time2Plug SmallBTB — '+ph+' — tranche',1,a[ix]));if(l>30)current.push(makeLine('ML+','Mètre supplémentaire',l-30,a[3]))}}
+   if(elTableau.checked)current.push(makeLine('','Tableautin',1,98));
+   if(elPercement.checked)current.push(makeLine('','Percement additionnel',1,96));
+   if(elTerre.checked)current.push(makeLine('','Piquet de terre',1,167.10));
+   if(elGenieCivil.checked)current.push(makeLine('','Génie civil',1,396.90));
+   if(elBinome.checked)w=(w?w+' ':'')+'Time2Plug : tarif binôme non renseigné dans le BPU, validation manuelle nécessaire.';
+ }
+ render(w);
+};
+function resetFormV3(){document.querySelectorAll('input[type=checkbox]').forEach(function(x){x.checked=false});elBinomeWrap.style.display='none';elLength.value=5;elComment.value='';current=[];render('')}
+window.resetForm=resetFormV3;
+elClient.addEventListener('change',function(){if(elClient.value==='CAP'){elPower.value='7.4';elPhase.value='mono'}render('')});
+[elBinome,elBinomeDuration].forEach(function(x){x.addEventListener('change',function(){elBinomeWrap.style.display=elBinome.checked?'block':'none';window.calculate()})});
+[elTic,elTableau,elPercement,elTerre,elGenieCivil,elPower,elPhase,elLength,elLocation].forEach(function(x){x.addEventListener('change',window.calculate)});
+function norm(v){return String(v==null?'':v).trim().toLowerCase()}
+function findValV3(o,keys){for(var i=0;i<keys.length;i++){var k=keys[i];if(o&&o[k]!=null&&String(o[k]).trim()!=='')return o[k]}return ''}
+function applyAuditV3(a,source){
+ var d=a&&a.data?a.data:{};
+ var donor=norm(a&&(a.donneur||a.donor||findValV3(d,['donneur','donor'])));
+ if(donor.indexOf('bump')>=0)elClient.value='BUMP';else if(donor.indexOf('cap')>=0)elClient.value='CAP';else if(donor.indexOf('time')>=0)elClient.value='T2P_HOME';
+ elName.value=a&&(a.client||a.clientFinal||a.clientName)||'';
+ var pu=String(findValV3(d,['puissance','puissanceSouscrite','puissance_borne'])||'').replace(',','.');
+ var tb=norm(findValV3(d,['typeborne','typeBorne']));
+ elPower.value=/22/.test(pu)||/22/.test(tb)?'22':/11/.test(pu)||/11/.test(tb)?'11':'7.4';
+ var ph=norm(findValV3(d,['compteur','phase','typeborne','typeBorne']));elPhase.value=/tri/.test(ph)?'tri':'mono';
+ var lg=findValV3(d,['longueurcable','longueurCable','longueur','metrage','metrageCable','distance']);if(lg!=='')elLength.value=lg;
+ var env=norm(findValV3(d,['environnement','environment']));if(/ext/.test(env))elLocation.value='exterieur';else if(/int/.test(env))elLocation.value='interieur';
+ elTableau.checked=norm(findValV3(d,['divisionnaire','tableau','extensionTableau']))==='oui';
+ var b=norm(findValV3(d,['binome','binôme','besoinBinome','besoinBinôme']));elBinome.checked=/oui|demi|½|journee|journée/.test(b);if(/journee|journée/.test(b)&&!/½|demi/.test(b))elBinomeDuration.value='full';elBinomeWrap.style.display=elBinome.checked?'block':'none';
+ E('crvtInfo').className='importInfo ok';E('crvtInfo').innerHTML='<b>✓ CRVT récupéré</b><br>Source : '+source;
+ window.calculate();
+}
+window.importCRVT=function(input){var f=input.files&&input.files[0];input.value='';if(!f)return;var r=new FileReader();r.onload=function(){try{var p=JSON.parse(r.result);var a=Array.isArray(p.audits)?p.audits.slice().sort(function(x,y){return String(y.updatedAt||'').localeCompare(String(x.updatedAt||''))})[0]:p;applyAuditV3(a,'fichier CRVT')}catch(e){E('crvtInfo').className='importInfo warn';E('crvtInfo').textContent='Fichier CRVT invalide : '+e.message}};r.readAsText(f)};
+
+function exportBpuExcel(){
+  if(!current.length){alert('Calcule d’abord le devis avant de générer le BPU Excel.');return}
+  if(typeof XLSX==='undefined'){alert('Le module Excel n’est pas chargé. Vérifie la connexion internet puis réessaie.');return}
+  var donor=elClient.value, name=elName.value||'Chantier sans nom', rows=[], ws, wb=XLSX.utils.book_new();
+  var title='BPU rempli — '+elClient.options[elClient.selectedIndex].text+' — '+name;
+  if(donor==='BUMP'){
+    rows=[
+      ['ENSIO - IRVE - Installation borne de recharge - Maison Individuelle','','','','','','',''],
+      ['Date :',new Date().toLocaleDateString('fr-FR'),'Nom :',name,'','','',''],
+      ['Référence','Prestations','U','PU (€ HT)','Quantité','TOTAL (€ HT)','Commentaires Bump','Commentaires ENSIO']
+    ];
+    current.forEach(function(x){
+      var u=/M\+|mètre|câble|tube|RJ45/i.test(x.label)?'ml':/forfait|installation/i.test(x.label)?'fft':'u';
+      rows.push([x.ref||'',x.label,u,x.pu,x.qty,'='+String.fromCharCode(69)+rows.length+'*'+String.fromCharCode(68)+rows.length,'','']);
+    });
+    rows.push(['','','','','','TOTAL OFFRE (HT)','=SUM(F4:F'+(rows.length)+')','']);
+    ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:14},{wch:62},{wch:10},{wch:14},{wch:12},{wch:16},{wch:28},{wch:28}];
+  }else if(donor==='CAP'){
+    rows=[
+      ['Installation de Recharge pour Véhicules Electriques','','','',''],
+      ['Site :',name,'','',''],
+      ['Description / prestation','Unité','Quantité','Prix (€HT) Unitaire','Prix (€HT) Total']
+    ];
+    current.forEach(function(x){
+      var u=/métré|mètre|câble|goulotte/i.test(x.label)?'ml':/forfait|installation/i.test(x.label)?'Forfait':'u';
+      rows.push([x.label,u,x.qty,x.pu,'='+String.fromCharCode(67)+rows.length+'*'+String.fromCharCode(68)+rows.length]);
+    });
+    rows.push(['','','','Total HT','=SUM(E4:E'+rows.length+')']);
+    ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:75},{wch:14},{wch:12},{wch:18},{wch:18}];
+  }else if(donor==='T2P_HOME'){
+    rows=[
+      ['Time2Plug — @Home','','','','','','','','',''],
+      ['Chantier',name,'','','','','','','',''],
+      ['Type de service','Tranche / détail','Unité','Coûts ENSIO','Quantité','Total ligne','','','',''],
+    ];
+    current.forEach(function(x){
+      var tranche=x.label.replace(/^Time2Plug @Home — /,'');
+      var u=/mètre|métré/i.test(x.label)?'Prix au mètre':'Prix forfaitaire';
+      rows.push([x.label,tranche,u,x.pu,x.qty,'='+String.fromCharCode(69)+rows.length+'*'+String.fromCharCode(68)+rows.length]);
+    });
+    rows.push(['','','','TOTAL HT','=SUM(F4:F'+rows.length+')']);
+    ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:65},{wch:35},{wch:20},{wch:16},{wch:12},{wch:18}];
+  }else{
+    rows=[
+      ['Time2Plug — SmallBTB','','','','','','',''],
+      ['Chantier',name,'','','','','',''],
+      ['Type de service','Tranche / détail','Unité','Prix Cible','Prix ENSIO','Quantité','Total ligne','Commentaires']
+    ];
+    current.forEach(function(x){
+      var u=/mètre|métré/i.test(x.label)?'ml':'Ft';
+      rows.push([x.label,'',u,'',x.pu,x.qty,'='+String.fromCharCode(70)+rows.length+'*'+String.fromCharCode(69)+rows.length,'']);
+    });
+    rows.push(['','','','','','TOTAL HT','=SUM(G4:G'+rows.length+')','']);
+    ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:65},{wch:35},{wch:16},{wch:16},{wch:16},{wch:12},{wch:18},{wch:28}];
+  }
+  var header=donor==='BUMP'?3:3;
+  for(var R=0;R<rows.length;R++){
+    for(var C=0;C<rows[R].length;C++){
+      var cell=ws[XLSX.utils.encode_cell({r:R,c:C})];
+      if(cell&&R===header-1){cell.s={font:{bold:true},fill:{fgColor:{rgb:'D9EAF7'}}}}
+    }
+  }
+  var safe=name.replace(/[^a-z0-9àâçéèêëîïôûùüÿñ -]/gi,'').trim().replace(/\s+/g,'_')||'chantier';
+  XLSX.writeFile(wb,'BPU_'+donor+'_'+safe+'.xlsx');
+}
+window.addEventListener('DOMContentLoaded',function(){elBinomeWrap.style.display='none';render('')});
+</script></body></html>
