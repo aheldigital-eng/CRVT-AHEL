@@ -41,7 +41,7 @@ window.calculate=function(){
    if(elBinome.checked)w=(w?w+' ':'')+'BUMP : tarif binôme non renseigné dans le BPU, validation manuelle nécessaire.';
  }else if(c==='CAP'){
    var vals=CAP_MAIN[p+'-'+ph+'-'+loc];
-   if(vals){var idx=l<=5?0:1;current.push(makeLine('FORFAIT','Installation '+p+' kW — '+loc+' — '+(idx?15:5)+' m',1,vals[idx]));if(l>15)current.push(makeLine('M+','Métré câble au-delà de 15 m',l-15,8.4366667))}
+   if(vals){var idx=l<=5?0:1;current.push(makeLine('FORFAIT','Installation '+p+' kW — '+loc+' — '+(idx?15:5)+' m',1,vals[idx]));if(l>15)current.push(makeLine('M+','Métré câble au-delà de 15 m',l-15,8))}
    else w='Configuration Cap’Bornes non couverte par le BPU.';
    if(elTic.checked){var tv=CAP_TIC[loc];if(tv)current.push(makeLine('TIC','Raccordement TIC — '+loc,1,tv[l<=5?0:1]))}
    if(elTableau.checked)current.push(makeLine('','Extension tableau élec / tableautin',1,72));
