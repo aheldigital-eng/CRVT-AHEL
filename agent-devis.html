@@ -32,7 +32,7 @@ window.calculate=function(){
  current=[];
  var c=elClient.value,p=parseFloat(elPower.value),ph=elPhase.value,l=parseFloat(elLength.value)||0,loc=elLocation.value,w='';
  if(c==='BUMP'){
-   if(p===7.4){var x=BUMP_A.find(function(a){return l<=a[1]});if(x)current.push(makeLine(x[0],'Forfait installation 7,4 kW — ≤ '+x[1]+' m',1,x[2]));else{current.push(makeLine('A-3','Forfait installation 7,4 kW — ≤ 20 m',1,809));current.push(makeLine('C-7','Mètre supplémentaire câble 3G6',l-20,6.0685));}}
+   if(p===7.4){var x=BUMP_A.find(function(a){return l<=a[1]});if(x)current.push(makeLine(x[0],'Forfait installation 7,4 kW — ≤ '+x[1]+' m',1,x[2]));else{current.push(makeLine('A-3','Forfait installation 7,4 kW — ≤ 20 m',1,809));current.push(makeLine('C-8','Mètre supplémentaire — câble 3G10²',l-20,8.4366666667));}}
    else if(p===22)w='BUMP : les tarifs 22 kW B-1/B-2/B-3 du BPU transmis sont non renseignés.';
    else w='BUMP : configuration non couverte.';
    if(elTableau.checked)current.push(makeLine('C-6','Extension tableau élec / tableautin dédié',1,72));
