@@ -99,7 +99,7 @@ function exportBpuExcel(){
     ];
     current.forEach(function(x){
       var u=/M\+|mètre|câble|tube|RJ45/i.test(x.label)?'ml':/forfait|installation/i.test(x.label)?'fft':'u';
-      rows.push([x.ref||'',x.label,u,x.pu,x.qty,'='+String.fromCharCode(69)+rows.length+'*'+String.fromCharCode(68)+rows.length,'','']);
+      var rr=rows.length+1; rows.push([x.ref||'',x.label,u,x.pu,x.qty,'=E'+rr+'*D'+rr,'','']);
     });
     rows.push(['','','','','','TOTAL OFFRE (HT)','=SUM(F4:F'+(rows.length)+')','']);
     ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:14},{wch:62},{wch:10},{wch:14},{wch:12},{wch:16},{wch:28},{wch:28}];
@@ -111,7 +111,7 @@ function exportBpuExcel(){
     ];
     current.forEach(function(x){
       var u=/métré|mètre|câble|goulotte/i.test(x.label)?'ml':/forfait|installation/i.test(x.label)?'Forfait':'u';
-      rows.push([x.label,u,x.qty,x.pu,'='+String.fromCharCode(67)+rows.length+'*'+String.fromCharCode(68)+rows.length]);
+      var rr=rows.length+1; rows.push([x.label,u,x.qty,x.pu,'=C'+rr+'*D'+rr]);
     });
     rows.push(['','','','Total HT','=SUM(E4:E'+rows.length+')']);
     ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:75},{wch:14},{wch:12},{wch:18},{wch:18}];
@@ -124,7 +124,7 @@ function exportBpuExcel(){
     current.forEach(function(x){
       var tranche=x.label.replace(/^Time2Plug @Home — /,'');
       var u=/mètre|métré/i.test(x.label)?'Prix au mètre':'Prix forfaitaire';
-      rows.push([x.label,tranche,u,x.pu,x.qty,'='+String.fromCharCode(69)+rows.length+'*'+String.fromCharCode(68)+rows.length]);
+      var rr=rows.length+1; rows.push([x.label,tranche,u,x.pu,x.qty,'=E'+rr+'*D'+rr]);
     });
     rows.push(['','','','TOTAL HT','=SUM(F4:F'+rows.length+')']);
     ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:65},{wch:35},{wch:20},{wch:16},{wch:12},{wch:18}];
@@ -136,7 +136,7 @@ function exportBpuExcel(){
     ];
     current.forEach(function(x){
       var u=/mètre|métré/i.test(x.label)?'ml':'Ft';
-      rows.push([x.label,'',u,'',x.pu,x.qty,'='+String.fromCharCode(70)+rows.length+'*'+String.fromCharCode(69)+rows.length,'']);
+      var rr=rows.length+1; rows.push([x.label,'',u,'',x.pu,x.qty,'=F'+rr+'*E'+rr,'']);
     });
     rows.push(['','','','','','TOTAL HT','=SUM(G4:G'+rows.length+')','']);
     ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:65},{wch:35},{wch:16},{wch:16},{wch:16},{wch:12},{wch:18},{wch:28}];
