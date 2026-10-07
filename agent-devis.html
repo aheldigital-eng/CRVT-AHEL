@@ -193,4 +193,53 @@ async function importAutoCRVT(){
   }catch(e){console.warn('Import automatique CRVT:',e)}
 }
 window.addEventListener('DOMContentLoaded',importAutoCRVT);importAutoCRVT();
+
+function xmlEscapeBpu(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;')}
+function crc32Bpu(data){var t=crc32Bpu.t||(crc32Bpu.t=(function(){var a=[];for(var n=0;n<256;n++){var x=n;for(var k=0;k<8;k++)x=(x&1)?(0xedb88320^(x>>>1)):(x>>>1);a[n]=x>>>0}return a})()),cc=0xffffffff;for(var i=0;i<data.length;i++)cc=t[(cc^data[i])&255]^(cc>>>8);return(cc^0xffffffff)>>>0}
+function p16Bpu(a,n){a.push(n&255,(n>>>8)&255)}
+function p32Bpu(a,n){a.push(n&255,(n>>>8)&255,(n>>>16)&255,(n>>>24)&255)}
+function makeZipBpu(files){
+  var enc=new TextEncoder(),parts=[],central=[],offset=0;
+  Object.keys(files).forEach(function(name){
+    var nb=enc.encode(name),d=enc.encode(files[name]),crc=crc32Bpu(d),lh=[];
+    p32Bpu(lh,0x04034b50);p16Bpu(lh,20);p16Bpu(lh,0);p16Bpu(lh,0);p16Bpu(lh,0);p16Bpu(lh,0);p32Bpu(lh,crc);p32Bpu(lh,d.length);p32Bpu(lh,d.length);p16Bpu(lh,nb.length);p16Bpu(lh,0);
+    var local=new Uint8Array(lh.concat(Array.from(nb),Array.from(d)));parts.push(local);
+    var ch=[];p32Bpu(ch,0x02014b50);p16Bpu(ch,20);p16Bpu(ch,20);p16Bpu(ch,0);p16Bpu(ch,0);p16Bpu(ch,0);p16Bpu(ch,0);p32Bpu(ch,crc);p32Bpu(ch,d.length);p32Bpu(ch,d.length);p16Bpu(ch,nb.length);p16Bpu(ch,0);p16Bpu(ch,0);p16Bpu(ch,0);p16Bpu(ch,0);p32Bpu(ch,0);p32Bpu(ch,offset);central.push(new Uint8Array(ch.concat(Array.from(nb))));offset+=local.length;
+  });
+  var cdOffset=offset,cdSize=central.reduce(function(s,x){return s+x.length},0),end=[];
+  p32Bpu(end,0x06054b50);p16Bpu(end,0);p16Bpu(end,0);p16Bpu(end,central.length);p16Bpu(end,central.length);p32Bpu(end,cdSize);p32Bpu(end,cdOffset);p16Bpu(end,0);
+  return new Blob(parts.concat(central).concat([new Uint8Array(end)]),{type:'application/zip'});
+}
+function buildBpuDownload(){
+  var link=document.getElementById('downloadBpu');if(!link)return;
+  if(!current.length){link.removeAttribute('href');link.style.opacity='.5';return}
+  var donor=document.getElementById('client').value;
+  var donorName=document.getElementById('client').selectedOptions[0].text;
+  var chantier=document.getElementById('name').value||'Chantier sans nom';
+  var rows=[
+    ['BPU rempli — '+donorName,'','','',''],
+    ['Date',new Date().toLocaleDateString('fr-FR'),'','',''],
+    ['Chantier',chantier,'','',''],
+    ['Référence','Prestation','Unité','PU HT','Quantité','Total HT']
+  ];
+  var total=0;
+  current.forEach(function(x){var pu=Number(x.pu)||0,qty=Number(x.qty)||0,tt=Number(x.total)||pu*qty;total+=tt;rows.push([x.ref||'',x.label||'','u',pu,qty,tt])});
+  rows.push(['','','','','TOTAL HT',total]);
+  var files={};
+  files['[Content_Types].xml']='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>';
+  files['_rels/.rels']='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+  files['xl/workbook.xml']='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="BPU rempli" sheetId="1" r:id="rId1"/></sheets></workbook>';
+  files['xl/_rels/workbook.xml.rels']='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>';
+  var sheet='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+  rows.forEach(function(row,i){var rn=i+1;sheet+='<row r="'+rn+'">';row.forEach(function(v,j){var ref=String.fromCharCode(65+j)+rn;if(typeof v==='number')sheet+='<c r="'+ref+'"><v>'+v+'</v></c>';else sheet+='<c r="'+ref+'" t="inlineStr"><is><t>'+xmlEscapeBpu(v)+'</t></is></c>'});sheet+='</row>'});
+  sheet+='</sheetData></worksheet>';files['xl/worksheets/sheet1.xml']=sheet;
+  var blob=makeZipBpu(files);
+  if(link.dataset.url)URL.revokeObjectURL(link.dataset.url);
+  var url=URL.createObjectURL(blob);link.dataset.url=url;link.href=url;link.download='BPU_'+donor+'_'+chantier.replace(/[^a-z0-9àâçéèêëîïôûùüÿñ -]/gi,'').trim().replace(/\s+/g,'_')+'.xlsx';link.style.opacity='1';
+}
+var _crvtCalculateForExcel=calculate;
+calculate=function(){_crvtCalculateForExcel();buildBpuDownload()};
+var _crvtResetForExcel=resetForm;
+resetForm=function(){_crvtResetForExcel();buildBpuDownload()};
+window.addEventListener('DOMContentLoaded',function(){buildBpuDownload()});
 </script></body></html>
