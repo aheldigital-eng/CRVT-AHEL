@@ -10,7 +10,7 @@
 <label>Options relevées</label><div class="checks"><label class="check"><input type="checkbox" id="tic"> TIC</label><label class="check"><input type="checkbox" id="tableau"> Extension tableau</label><label class="check"><input type="checkbox" id="percement"> Percement supplémentaire</label><label class="check"><input type="checkbox" id="terre"> Piquet de terre</label><label class="check"><input type="checkbox" id="binome"> Binôme</label><div id="binomeDurationWrap" style="grid-column:1/-1;display:none"><label>Durée du binôme</label><select id="binomeDuration"><option value="half">½ journée</option><option value="full">1 journée</option></select></div><label class="check"><input type="checkbox" id="geniecivil"> Génie civil</label></div>
 <label>Commentaire</label><textarea id="comment" rows="3" placeholder="Travaux particuliers…"></textarea><div class="actions"><button class="primary" onclick="calculate()">Calculer le devis</button><button class="secondary" onclick="resetForm()">Réinitialiser</button></div></section>
 <section class="card"><div class="summary"><div><h2 style="margin:0 0 6px">Proposition de devis</h2><span id="badge" class="pill">BUMP</span><div id="status" class="muted" style="margin-top:7px">Saisissez les données du chantier puis calculez.</div></div><div class="total" id="total">0,00 € HT</div></div><div id="warning" class="notice hidden"></div><table class="table"><thead><tr><th>Référence</th><th>Prestation</th><th class="num">Qté</th><th class="num">PU HT</th><th class="num">Total HT</th></tr></thead><tbody id="lines"><tr><td colspan="5" class="muted">Aucune ligne calculée.</td></tr></tbody></table><div class="actions"><button class="primary" onclick="saveDraft()">Enregistrer brouillon</button><button class="secondary" onclick="exportBpuExcel()">📊 Télécharger BPU Excel</button><button class="secondary" onclick="exportCsv()">Exporter CSV</button></div><p class="muted" style="margin-top:14px">V1 : le calcul est volontairement transparent. Le moteur affiche les lignes avant toute génération du devis final.</p></section></div></div>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script><script>window.addEventListener("error",function(e){if(e&&e.message&&/XLSX/i.test(e.message)){var x=document.getElementById("warning");if(x){x.classList.remove("hidden");x.textContent="Module Excel non chargé : "+e.message}}});</script><script>var current=[];
+<script>window.addEventListener("error",function(e){if(e&&e.message&&/XLSX/i.test(e.message)){var x=document.getElementById("warning");if(x){x.classList.remove("hidden");x.textContent="Module Excel non chargé : "+e.message}}});</script><script>var current=[];
 var E=function(id){return document.getElementById(id)};
 var elClient=E('client'),elName=E('name'),elPower=E('power'),elPhase=E('phase'),elLength=E('length'),elLocation=E('location'),elComment=E('comment'),elTic=E('tic'),elTableau=E('tableau'),elPercement=E('percement'),elTerre=E('terre'),elBinome=E('binome'),elBinomeDuration=E('binomeDuration'),elBinomeWrap=E('binomeDurationWrap'),elGenieCivil=E('geniecivil');
 var BUMP_A=[['A-1',5,637],['A-2',10,695],['A-3',20,809]];
@@ -87,69 +87,41 @@ function applyAuditV3(a,source){
 window.importCRVT=function(input){var f=input.files&&input.files[0];input.value='';if(!f)return;var r=new FileReader();r.onload=function(){try{var p=JSON.parse(r.result);var a=Array.isArray(p.audits)?p.audits.slice().sort(function(x,y){return String(y.updatedAt||'').localeCompare(String(x.updatedAt||''))})[0]:p;applyAuditV3(a,'fichier CRVT')}catch(e){E('crvtInfo').className='importInfo warn';E('crvtInfo').textContent='Fichier CRVT invalide : '+e.message}};r.readAsText(f)};
 
 function exportBpuExcel(){
-  if(!current.length){alert('Calcule d’abord le devis avant de générer le BPU Excel.');return}
-  if(typeof XLSX==='undefined'){alert('Le module Excel n’est pas chargé. Vérifie la connexion internet puis réessaie.');return}
-  var donor=elClient.value, name=elName.value||'Chantier sans nom', rows=[], ws, wb=XLSX.utils.book_new();
+  if(!current.length){alert('Calcule d’abord le devis avant de télécharger le BPU.');return}
+  var donor=elClient.value;
+  var name=elName.value||'Chantier sans nom';
   var title='BPU rempli — '+elClient.options[elClient.selectedIndex].text+' — '+name;
+  var html='<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif}table{border-collapse:collapse;width:100%}th,td{border:1px solid #999;padding:6px}th{background:#d9eaf7;font-weight:bold}.num{text-align:right}</style></head><body>';
+  html+='<h2>'+escExcel(title)+'</h2>';
+  html+='<p><b>Date :</b> '+new Date().toLocaleDateString('fr-FR')+' &nbsp; <b>Chantier :</b> '+escExcel(name)+'</p>';
+  html+='<table>';
   if(donor==='BUMP'){
-    rows=[
-      ['ENSIO - IRVE - Installation borne de recharge - Maison Individuelle','','','','','','',''],
-      ['Date :',new Date().toLocaleDateString('fr-FR'),'Nom :',name,'','','',''],
-      ['Référence','Prestations','U','PU (€ HT)','Quantité','TOTAL (€ HT)','Commentaires Bump','Commentaires ENSIO']
-    ];
-    current.forEach(function(x){
-      var u=/M\+|mètre|câble|tube|RJ45/i.test(x.label)?'ml':/forfait|installation/i.test(x.label)?'fft':'u';
-      var rr=rows.length+1; rows.push([x.ref||'',x.label,u,x.pu,x.qty,'=E'+rr+'*D'+rr,'','']);
-    });
-    rows.push(['','','','','','TOTAL OFFRE (HT)','=SUM(F4:F'+(rows.length)+')','']);
-    ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:14},{wch:62},{wch:10},{wch:14},{wch:12},{wch:16},{wch:28},{wch:28}];
-  }else if(donor==='CAP'){
-    rows=[
-      ['Installation de Recharge pour Véhicules Electriques','','','',''],
-      ['Site :',name,'','',''],
-      ['Description / prestation','Unité','Quantité','Prix (€HT) Unitaire','Prix (€HT) Total']
-    ];
-    current.forEach(function(x){
-      var u=/métré|mètre|câble|goulotte/i.test(x.label)?'ml':/forfait|installation/i.test(x.label)?'Forfait':'u';
-      var rr=rows.length+1; rows.push([x.label,u,x.qty,x.pu,'=C'+rr+'*D'+rr]);
-    });
-    rows.push(['','','','Total HT','=SUM(E4:E'+rows.length+')']);
-    ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:75},{wch:14},{wch:12},{wch:18},{wch:18}];
-  }else if(donor==='T2P_HOME'){
-    rows=[
-      ['Time2Plug — @Home','','','','','','','','',''],
-      ['Chantier',name,'','','','','','','',''],
-      ['Type de service','Tranche / détail','Unité','Coûts ENSIO','Quantité','Total ligne','','','',''],
-    ];
-    current.forEach(function(x){
-      var tranche=x.label.replace(/^Time2Plug @Home — /,'');
-      var u=/mètre|métré/i.test(x.label)?'Prix au mètre':'Prix forfaitaire';
-      var rr=rows.length+1; rows.push([x.label,tranche,u,x.pu,x.qty,'=E'+rr+'*D'+rr]);
-    });
-    rows.push(['','','','TOTAL HT','=SUM(F4:F'+rows.length+')']);
-    ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:65},{wch:35},{wch:20},{wch:16},{wch:12},{wch:18}];
+    html+='<tr><th>Référence</th><th>Prestations</th><th>U</th><th>PU HT</th><th>Quantité</th><th>Total HT</th><th>Commentaires Bump</th><th>Commentaires ENSIO</th></tr>';
   }else{
-    rows=[
-      ['Time2Plug — SmallBTB','','','','','','',''],
-      ['Chantier',name,'','','','','',''],
-      ['Type de service','Tranche / détail','Unité','Prix Cible','Prix ENSIO','Quantité','Total ligne','Commentaires']
-    ];
-    current.forEach(function(x){
-      var u=/mètre|métré/i.test(x.label)?'ml':'Ft';
-      var rr=rows.length+1; rows.push([x.label,'',u,'',x.pu,x.qty,'=F'+rr+'*E'+rr,'']);
-    });
-    rows.push(['','','','','','TOTAL HT','=SUM(G4:G'+rows.length+')','']);
-    ws=XLSX.utils.aoa_to_sheet(rows); ws['!cols']=[{wch:65},{wch:35},{wch:16},{wch:16},{wch:16},{wch:12},{wch:18},{wch:28}];
+    html+='<tr><th>Référence</th><th>Prestation</th><th>Unité</th><th>PU HT</th><th>Quantité</th><th>Total HT</th></tr>';
   }
-  var header=donor==='BUMP'?3:3;
-  for(var R=0;R<rows.length;R++){
-    for(var C=0;C<rows[R].length;C++){
-      var cell=ws[XLSX.utils.encode_cell({r:R,c:C})];
-      if(cell&&R===header-1){cell.s={font:{bold:true},fill:{fgColor:{rgb:'D9EAF7'}}}}
-    }
-  }
-  var safe=name.replace(/[^a-z0-9àâçéèêëîïôûùüÿñ -]/gi,'').trim().replace(/\s+/g,'_')||'chantier';
-  var filename='BPU_'+donor+'_'+safe+'.xlsx'; var out=XLSX.write(wb,{bookType:'xlsx',type:'array'}); var blob=new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}); var url=URL.createObjectURL(blob); var a=document.createElement('a'); a.href=url; a.download=filename; a.style.display='none'; document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(url);a.remove()},1500);
+  var total=0;
+  current.forEach(function(x){
+    total+=Number(x.total)||0;
+    var u=/métré|mètre|mètre|câble|goulotte|M\+/i.test(x.label)?'ml':'u';
+    html+='<tr><td>'+escExcel(x.ref||'')+'</td><td>'+escExcel(x.label||'')+'</td><td>'+u+'</td><td class="num">'+numExcel(x.pu)+'</td><td class="num">'+numExcel(x.qty)+'</td><td class="num">'+numExcel(x.total)+'</td>';
+    if(donor==='BUMP') html+='<td></td><td></td>';
+    html+='</tr>';
+  });
+  html+='<tr><td colspan="'+(donor==='BUMP'?5:5)+'"><b>TOTAL OFFRE HT</b></td><td class="num"><b>'+numExcel(total)+'</b></td>';
+  if(donor==='BUMP') html+='<td></td><td></td>';
+  html+='</tr></table></body></html>';
+  var blob=new Blob([html],{type:'application/vnd.ms-excel;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download='BPU_'+donor+'_'+name.replace(/[^a-z0-9àâçéèêëîïôûùüÿñ -]/gi,'').trim().replace(/\s+/g,'_')+'.xls';
+  a.target='_blank';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){URL.revokeObjectURL(url);a.remove()},3000);
 }
+function escExcel(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function numExcel(v){return (Number(v)||0).toFixed(2).replace('.',',')}
 window.addEventListener('DOMContentLoaded',function(){elBinomeWrap.style.display='none';render('')});
 </script></body></html>
