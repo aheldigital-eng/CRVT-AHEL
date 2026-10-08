@@ -148,5 +148,6 @@ function generatePDF(){
 }
 function clearAll(){Object.keys(STATE).forEach(k=>STATE[k].forEach(s=>{s.checked=false;s.qty=1;}));render();}
 document.getElementById("date").value=new Date().toLocaleDateString("fr-FR");
+importCRVTHandoff();
 render();
 </script></body></html>
