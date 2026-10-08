@@ -325,6 +325,26 @@ async function migrateStorage(){
     historyCache=await idbAll();
   }catch(e){console.warn("Migration IndexedDB",e);}
 }
+function openDevisAgent(){
+  try{
+    save();
+    const handoff={
+      client:audit.client||audit.clientFinal||audit.clientName||"",
+      donneur:audit.donneur||"",
+      date:audit.date||"",
+      auditeur:audit.auditeur||"",
+      data:JSON.parse(JSON.stringify(audit.data||{})),
+      notes:JSON.parse(JSON.stringify(audit.notes||{})),
+      sections:JSON.parse(JSON.stringify(audit.sections||{})),
+      status:audit.status||"Brouillon"
+    };
+    sessionStorage.setItem("CRVT_TO_DEVIS",JSON.stringify(handoff));
+    window.location.href="agent-devis.html?from=crvt";
+  }catch(e){
+    console.error(e);
+    toast("Impossible de préparer le devis : "+e.message);
+  }
+}
 function save(){
   audit.updatedAt=new Date().toISOString();
   idbPut(JSON.parse(JSON.stringify(audit))).catch(e=>{console.warn("Sauvegarde IndexedDB impossible",e);toast("La sauvegarde a échoué. Vérifie l’espace disponible sur l’appareil.");});
@@ -400,7 +420,7 @@ if(audit.sections.borne)h+=`<section id="borne">${moduleCard("borne","EMPLACEMEN
 h+=`<section class="card" id="synthese"><span class="tag">SYNTHÈSE</span><h2>Synthèse automatique de l’audit</h2><p class="small">Cette synthèse se met à jour automatiquement avec les modules, photos, observations et contrôles de l’audit.</p><div id="summary"></div></section>`;
 h+=`<section class="card noPrint" id="actions">
 <div class="draftBar"><div><b>Audit #${esc(String(audit.id).slice(-6))}</b><div class="smallMuted">Sauvegarde automatique du brouillon activée · <span id="saveState">Prêt à enregistrer</span></div></div><div style="display:flex;align-items:center;gap:8px"><span id="completionBadge" class="statusBadge">État</span><span class="statusBadge ${audit.status==="Terminé"?"done":""}">${esc(audit.status||"Brouillon")}</span></div></div>
-<div class="row"><button class="btn primary" onclick="saveAudit()">💾 Enregistrer l’audit</button><button class="btn secondary" onclick="finishAudit()">✓ Marquer terminé</button><button class="btn primary" onclick="preReport()">📄 Vérifier & générer</button><button class="btn secondary" onclick="shareCurrentAudit()">📤 Partager le compte-rendu</button><button class="btn secondary" onclick="newAudit()">➕ Nouvel audit</button></div>
+<div class="row"><button class="btn primary" onclick="saveAudit()">💾 Enregistrer l’audit</button><button class="btn secondary" onclick="finishAudit()">✓ Marquer terminé</button><button class="btn primary" onclick="openDevisAgent()">💶 Préparer le devis</button><button class="btn primary" onclick="preReport()">📄 Vérifier & générer</button><button class="btn secondary" onclick="shareCurrentAudit()">📤 Partager le compte-rendu</button><button class="btn secondary" onclick="newAudit()">➕ Nouvel audit</button></div>
 <div class="pdfThemeLauncher">
   <div class="pdfThemeInfo"><div id="pdfThemeSwatch" class="pdfThemeSwatch"></div><div><div class="pdfThemeName" id="pdfThemeName">Design PDF : ENSIO Pro</div><div class="pdfThemeHint">Choisis le style du rapport avant de générer le PDF.</div></div></div>
   <button type="button" class="btn outline" onclick="openPdfThemePicker()">🎨 Choisir le design PDF</button>
