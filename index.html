@@ -339,7 +339,7 @@ function openDevisAgent(){
       status:audit.status||"Brouillon"
     };
     sessionStorage.setItem("CRVT_TO_DEVIS",JSON.stringify(handoff));
-    window.location.href="preparateur-devis.html?from=crvt";
+    window.location.href="preparateur-devis.html?from=crvt&donneur="+encodeURIComponent(audit.donneur||"");
   }catch(e){
     console.error(e);
     toast("Impossible de préparer le devis : "+e.message);
