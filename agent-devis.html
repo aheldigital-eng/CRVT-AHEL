@@ -85,7 +85,23 @@ function applyAuditV3(a,source){
  window.calculate();
 }
 window.importCRVT=function(input){var f=input.files&&input.files[0];input.value='';if(!f)return;var r=new FileReader();r.onload=function(){try{var p=JSON.parse(r.result);var a=Array.isArray(p.audits)?p.audits.slice().sort(function(x,y){return String(y.updatedAt||'').localeCompare(String(x.updatedAt||''))})[0]:p;applyAuditV3(a,'fichier CRVT')}catch(e){E('crvtInfo').className='importInfo warn';E('crvtInfo').textContent='Fichier CRVT invalide : '+e.message}};r.readAsText(f)};
-window.addEventListener('DOMContentLoaded',function(){elBinomeWrap.style.display='none';render('')});
+window.addEventListener('DOMContentLoaded',function(){elBinomeWrap.style.display='none';render('')});function importCRVTFromHandoff(){
+  try{
+    const raw=sessionStorage.getItem("CRVT_TO_DEVIS");
+    if(!raw)return;
+    const payload=JSON.parse(raw);
+    sessionStorage.removeItem("CRVT_TO_DEVIS");
+    applyAuditV3(payload,"CRVT en cours");
+    E('crvtInfo').className='importInfo ok';
+    E('crvtInfo').innerHTML='<b>✓ CRVT transmis automatiquement</b><br>Les informations du relevé ont été récupérées.';
+  }catch(e){
+    console.error(e);
+    E('crvtInfo').className='importInfo warn';
+    E('crvtInfo').textContent='Transmission CRVT impossible : '+e.message;
+  }
+}
+window.addEventListener('DOMContentLoaded',function(){setTimeout(importCRVTFromHandoff,0)});
+
 function buildBpuDownload(){var link=document.getElementById('downloadBpu');if(!link)return;link.disabled=!current.length;link.style.opacity=current.length?'1':'.5'}
 function setCell(ws,addr,v){ws[addr]={v:v,t:typeof v==='number'?'n':'s'}}
 function donorBpuRows(){var d=elClient.value, rows=[];if(d==='BUMP'){rows=[['ENSIO - IRVE - Installation borne - Maison Individuelle'],['Date :',new Date().toLocaleDateString('fr-FR'),'Nom :',elName.value||''],[],['Référence','Prestations','U','PU (€ HT)','Qte','TOTAL (€ HT)'],['A','Forfaits installation 7,4 kW', '', '', '', '']];['A-1','A-2','A-3','B-1','B-2','B-3','C-1','C-2','C-3','C-4','C-5','C-6','C-7','C-8','C-9','C-10','C-11'].forEach(function(x){rows.push([x,'','','','',''])});}
