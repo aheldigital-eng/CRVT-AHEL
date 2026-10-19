@@ -1462,6 +1462,17 @@ if(audit.sections.borne){
 }
 
 
+/* Page finale : mentions client sur les métrés et les déplacements supplémentaires. */
+pages.push(`<section class="page reportPage">
+  ${pageHeader(reportPageNo++)}
+  <h1 style="color:#b91c1c;font-size:22px;line-height:1.15">MENTIONS RELATIVES AUX MÉTRÉS ET AUX DÉPLACEMENTS SUPPLÉMENTAIRES</h1>
+  <div style="height:3px;background:#dc2626;width:100%;margin:0 0 14mm"></div>
+  <div style="border:2px solid #dc2626;background:#fff7f7;padding:10mm 9mm;border-radius:2mm;color:#7f1d1d;font-size:15px;line-height:1.65;font-weight:700">
+    <p style="margin:0 0 9mm">L’ensemble des mesures et des métrés nécessaires à la réalisation des travaux ont été effectués par le client.</p>
+    <p style="margin:0">En cas de métrés manquants, incomplets ou inexacts entraînant la nécessité d’un déplacement supplémentaire, celui-ci pourra faire l’objet d’une facturation complémentaire.</p>
+  </div>
+</section>`);
+
 /* Pied de page uniforme sur les pages intérieures : client + pagination. */
 const totalPages=pages.length;
 pages=pages.map((html,idx)=>{
